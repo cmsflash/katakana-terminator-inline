@@ -1,9 +1,9 @@
 ### Katakana Terminator 片假名终结者 カタカナ‌ターミネーター
 
 #### In a nutshell 简介
-A browser extension to convert *gairaigo* (Japanese loan words) back to English.
+A browser extension to convert *gairaigo* (Japanese loan words) back to English. Different from the [upstream](https://github.com/Arnie97/katakana-terminator), this version replaces the katakana words inline, instead of adding tiny markups on top of them, making reading more streamlined for people who do not read any Japanese.
 
-这是一个浏览器扩展插件，在网页中的日语外来语上方标注英文原词。
+这是一个浏览器扩展插件，在网页中将日语外来语转换回英文原词。和[原版](https://github.com/Arnie97/katakana-terminator)不同，这一版本直接在文中替换片假名，而不是在片假名上方用小字标注英文，对完全不懂日文的人阅读体验更好。
 
 #### Installation 安装
 Please follow the [installation instructions](https://greasyfork.org/en) to configure your browser,
