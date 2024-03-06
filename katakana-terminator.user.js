@@ -25,7 +25,7 @@
 // define some shorthands
 var _ = document;
 
-var queue = {};  // {"カタカナ": [rtNodeA, rtNodeB]}
+var queue = {};  // {"カタカナ": [textNodeA, textNodeB]}
 var cachedTranslations = {};  // {"ターミネーター": "Terminator"}
 var newNodes = [_.body];
 
@@ -47,31 +47,28 @@ function scanTextNodes(node) {
         return node.childNodes.forEach(scanTextNodes);
 
     case Node.TEXT_NODE:
-        while ((node = addRuby(node)));
+        while ((node = replaceKatakana(node)));
     }
 }
 
-// Recursively add ruby tags to text nodes
-// Inspired by http://www.the-art-of-web.com/javascript/search-highlight/
-function addRuby(node) {
+// Recursively replace Katakana with English transliteration
+function replaceKatakana(node) {
     var katakana = /[\u30A1-\u30FA\u30FD-\u30FF][\u3099\u309A\u30A1-\u30FF]*[\u3099\u309A\u30A1-\u30FA\u30FC-\u30FF]|[\uFF66-\uFF6F\uFF71-\uFF9D][\uFF65-\uFF9F]*[\uFF66-\uFF9F]/, match;
     if (!node.nodeValue || !(match = katakana.exec(node.nodeValue))) {
         return false;
     }
-    var ruby = _.createElement('ruby');
-    ruby.appendChild(_.createTextNode(match[0]));
-    var rt = _.createElement('rt');
-    rt.classList.add('katakana-terminator-rt');
-    ruby.appendChild(rt);
 
-    // Append the ruby title node to the pending-translation queue
+    // Append the text node to the pending-translation queue
     queue[match[0]] = queue[match[0]] || [];
-    queue[match[0]].push(rt);
+    queue[match[0]].push(node);
 
     // <span>[startカナmiddleテストend]</span> =>
-    // <span>start<ruby>カナ<rt data-rt="Kana"></rt></ruby>[middleテストend]</span>
+    // <span>start<span class="english-translation"> English </span>[middleテストend]</span>
     var after = node.splitText(match.index);
-    node.parentNode.insertBefore(ruby, after);
+    var englishSpan = _.createElement('span');
+    englishSpan.classList.add('english-translation');
+    englishSpan.textContent = ' '; // Add spaces around the English translation
+    node.parentNode.insertBefore(englishSpan, after);
     after.nodeValue = after.nodeValue.substring(match[0].length);
     return after;
 }
@@ -86,7 +83,7 @@ function translateTextNodes() {
     for (var phrase in queue) {
         phraseCount++;
         if (phrase in cachedTranslations) {
-            updateRubyByCachedTranslations(phrase);
+            updateTransliterationsByCachedTranslations(phrase);
             continue;
         }
 
@@ -170,7 +167,7 @@ var apiList = [
                 var translated = item[0].replace(/\s+$/, ''),
                     original   = item[1].replace(/\s+$/, '');
                 cachedTranslations[original] = translated;
-                updateRubyByCachedTranslations(original);
+                updateTransliterationsByCachedTranslations(original);
             });
         },
     },
@@ -199,7 +196,7 @@ var apiList = [
                 translated.forEach(function(trans, i) {
                     var orig = phrases[i];
                     cachedTranslations[orig] = trans;
-                    updateRubyByCachedTranslations(orig);
+                    updateTransliterationsByCachedTranslations(orig);
                 });
                 return;
             }
@@ -211,19 +208,19 @@ var apiList = [
                 var original = s.orig.trim(),
                     translated = s.trans.trim();
                 cachedTranslations[original] = translated;
-                updateRubyByCachedTranslations(original);
+                updateTransliterationsByCachedTranslations(original);
             });
         },
     },
 ];
 
 // Clear the pending-translation queue
-function updateRubyByCachedTranslations(phrase) {
+function updateTransliterationsByCachedTranslations(phrase) {
     if (!cachedTranslations[phrase]) {
         return;
     }
     (queue[phrase] || []).forEach(function(node) {
-        node.dataset.rt = cachedTranslations[phrase];
+        node.textContent = cachedTranslations[phrase];
     });
     delete queue[phrase];
 }
@@ -238,8 +235,6 @@ function mutationHandler(mutationList) {
 }
 
 function main() {
-    GM_addStyle("rt.katakana-terminator-rt::before { content: attr(data-rt); }");
-
     var observer = new MutationObserver(mutationHandler);
     observer.observe(_.body, {childList: true, subtree: true});
 
